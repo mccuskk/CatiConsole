@@ -16,7 +16,7 @@ function logout(cb) {
 chrome.app.runtime.onLaunched.addListener(function(launchData) {
   var screenWidth = screen.availWidth;
   var screenHeight = screen.availHeight;
-  var targetOrigin = "http://cati.kwest.co?logout=true";
+  var targetOrigin = "http://cati.kwest.co/pair";
   chrome.app.window.create(
     'index.html',
     {
@@ -37,7 +37,7 @@ chrome.app.runtime.onLaunched.addListener(function(launchData) {
           win.contentWindow.document.addEventListener("message", function() {
             console.log("Window Msg ");
           });
-        })
+        });
       });
     }
   );
