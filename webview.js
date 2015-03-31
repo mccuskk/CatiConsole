@@ -1,6 +1,8 @@
 /*
   Global variables
 */
+
+var webviewEl;
 var uuid = "46ab76a3-bccd-4f29-a528-f03ba64a0589";
 var device;
 var socketId;
@@ -20,6 +22,10 @@ function str2ab(str) {
     bufView[i] = str.charCodeAt(i);
   }
   return buf;
+}
+
+function bluetoothMsg(str) {
+  webviewEl.contentWindow.postMessage({bluetooth: true, msg: str}, "*");
 }
 
 /*
@@ -63,7 +69,7 @@ chrome.bluetoothSocket.onReceiveError.addListener(function(errorInfo) {
 function initializeBluetooth() {
   
   chrome.bluetooth.getDevices(function(devices) {
-    console.log("Got "+devices.length+" devices");
+    bluetoothMsg("Got "+devices.length+" devices");
     for (var i = 0; i < devices.length; i++) {
       device = devices[i];
       console.log(device);
@@ -106,13 +112,14 @@ var messageHandler = function(event) {
 window.addEventListener('message', messageHandler, false);
 
 webviewEl = document.getElementById("catiWebView");
+
 webviewEl.addEventListener("contentload", function() {
   webviewEl.contentWindow.postMessage("From APP", "*");
   
   initializeBluetooth();
   
   setTimeout(function() {
-    console.log("Dialing");
+    bluetoothMsg("Dialing");
     chrome.bluetoothSocket.send(socketId, str2ab("17070"), sending);
     setTimeout(function() {
       console.log("Hang up");
