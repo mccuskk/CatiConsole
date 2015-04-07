@@ -5,7 +5,10 @@
 var webviewEl;
 var uuid = "46ab76a3-bccd-4f29-a528-f03ba64a0589";
 var device;
-var socketId;
+var socketId = null;
+var connected = false;
+var dialing;
+var socketError;
 
 /*
   Utility Functions
@@ -24,8 +27,8 @@ function str2ab(str) {
   return buf;
 }
 
-function bluetoothMsg(str) {
-  webviewEl.contentWindow.postMessage({bluetooth: true, msg: str}, "*");
+function bluetoothMsg(str, error) {
+  webviewEl.contentWindow.postMessage({bluetooth: true, msg: str, error: error}, "*");
 }
 
 /*
@@ -44,6 +47,7 @@ var onConnectedCallback = function() {
 function onSocketCreate(createInfo) {
   socketId = createInfo.socketId;
   if (device.uuids.indexOf(uuid) != -1) {
+    bluetoothMsg("Connecting to <b>"+device.name+"</b>");
     chrome.bluetoothSocket.connect(createInfo.socketId, device.address, uuid, onConnectedCallback);
   }
   else {
@@ -55,10 +59,38 @@ function sending(bytes_sent) {
   if (chrome.runtime.lastError) {
     failed_to_send(chrome.runtime.lastError.message);
   }
+  else {
+    connected = true;
+    if (dialing) {
+        dialing = false;
+        setTimeout(function() {
+          bluetoothMsg("Ending test dial...");
+          chrome.bluetoothSocket.send(socketId, str2ab("hangup"), sending);
+          setTimeout(function() {
+            if (!socketError) {
+              bluetoothMsg("success");
+            }
+          }, 1000);
+        }, 4500);
+    }
+  }
 }
 
 function failed_to_send(msg) {
-  console.log("Failed to send: "+msg);
+  connected = false;
+  if (!socketError) {
+    if (msg.indexOf("Socket not connected") != -1) {
+      bluetoothMsg("Socket not connected", true);
+      socketError = true;
+      if (dialing) {
+        dialing = false;
+        bluetoothMsg("failure", true);
+      }
+    }
+    else {
+      bluetoothMsg("Failed to send: "+msg, true);
+    }
+  }
 }
 
 chrome.bluetoothSocket.onReceiveError.addListener(function(errorInfo) {
@@ -68,11 +100,20 @@ chrome.bluetoothSocket.onReceiveError.addListener(function(errorInfo) {
   
 function initializeBluetooth() {
   
+  connected = false;
+  socketError = false;
+  
+  if (socketId) {
+    chrome.bluetoothSocket.disconnect(socketId);
+    socketId = null;
+  }
+  
   chrome.bluetooth.getDevices(function(devices) {
-    bluetoothMsg("Got "+devices.length+" devices");
+    if (devices.length === 0) {
+      bluetoothMsg("Sorry, no devices found", true);
+    }
     for (var i = 0; i < devices.length; i++) {
       device = devices[i];
-      console.log(device);
       chrome.bluetoothSocket.create(onSocketCreate);
     }
   });
@@ -92,6 +133,27 @@ var messageHandler = function(event) {
     });
   }
   
+  if (event.data.dial) {
+    chrome.bluetoothSocket.send(socketId, str2ab(event.data.dial), sending);
+  }
+  
+  if (event.data.bluetooth) {
+    if (event.data.enabled) {
+      initializeBluetooth();
+      
+      setTimeout(function() {
+        dialing = true;
+        bluetoothMsg("Dialing test number...");
+        chrome.bluetoothSocket.send(socketId, str2ab("17070"), sending);
+      }, 1000);
+    }
+    else {
+      chrome.bluetoothSocket.disconnect(socketId);
+      socketId = null;
+      bluetoothMsg("clear messages");
+    }
+  }
+  
   if (event.data.ajaxError) {
     var html = null;
     switch (event.data.status) {
@@ -109,6 +171,7 @@ var messageHandler = function(event) {
   }
 };
 
+window.removeEventListener('message', messageHandler, false);
 window.addEventListener('message', messageHandler, false);
 
 webviewEl = document.getElementById("catiWebView");
@@ -116,16 +179,5 @@ webviewEl = document.getElementById("catiWebView");
 webviewEl.addEventListener("contentload", function() {
   webviewEl.contentWindow.postMessage("From APP", "*");
   
-  initializeBluetooth();
-  
-  setTimeout(function() {
-    bluetoothMsg("Dialing");
-    chrome.bluetoothSocket.send(socketId, str2ab("17070"), sending);
-    setTimeout(function() {
-      console.log("Hang up");
-      chrome.bluetoothSocket.send(socketId, str2ab("hangup"), sending);
-    }, 8000);
-  }, 4000);
-
 });
 
