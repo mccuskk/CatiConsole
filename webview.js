@@ -37,18 +37,34 @@ function bluetoothMsg(str, error) {
 
 var onConnectedCallback = function() {
   if (chrome.runtime.lastError) {
-    console.log("Connection failed: " + chrome.runtime.lastError.message);
+    if (chrome.runtime.lastError.message.indexOf("(0x2750)") != -1) {
+      bluetoothMsg(device.name+" not connected");
+    }
+    else {
+      bluetoothMsg(chrome.runtime.lastError.message);
+    }
+    bluetoothMsg("failure", true);
   } 
   else {
-    console.log("Connected");
+    setTimeout(function() {
+      dialing = true;
+      bluetoothMsg("Dialing test number...");
+      chrome.bluetoothSocket.send(socketId, str2ab("17070"), sending);
+    }, 1000);
   }
 };
 
 function onSocketCreate(createInfo) {
   socketId = createInfo.socketId;
-  if (device.uuids.indexOf(uuid) != -1) {
+  if (device.uuids.indexOf(uuid) != -1 && device.paired) {
     bluetoothMsg("Connecting to <b>"+device.name+"</b>");
-    chrome.bluetoothSocket.connect(createInfo.socketId, device.address, uuid, onConnectedCallback);
+    if (!device.connected) {
+      bluetoothMsg(device.name+" not connected");
+      bluetoothMsg("failure", true);
+    }
+    else {
+      chrome.bluetoothSocket.connect(createInfo.socketId, device.address, uuid, onConnectedCallback);
+    }
   }
   else {
     console.log("Device does not support CatiDialer");
@@ -140,12 +156,6 @@ var messageHandler = function(event) {
   if (event.data.bluetooth) {
     if (event.data.enabled) {
       initializeBluetooth();
-      
-      setTimeout(function() {
-        dialing = true;
-        bluetoothMsg("Dialing test number...");
-        chrome.bluetoothSocket.send(socketId, str2ab("17070"), sending);
-      }, 1000);
     }
     else {
       chrome.bluetoothSocket.disconnect(socketId);
