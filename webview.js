@@ -58,13 +58,7 @@ function onSocketCreate(createInfo) {
   socketId = createInfo.socketId;
   if (device.uuids.indexOf(uuid) != -1 && device.paired) {
     bluetoothMsg("Connecting to <b>"+device.name+"</b>");
-    if (!device.connected) {
-      bluetoothMsg(device.name+" not connected");
-      bluetoothMsg("failure", true);
-    }
-    else {
-      chrome.bluetoothSocket.connect(createInfo.socketId, device.address, uuid, onConnectedCallback);
-    }
+    chrome.bluetoothSocket.connect(createInfo.socketId, device.address, uuid, onConnectedCallback);
   }
   else {
     console.log("Device does not support CatiDialer");
