@@ -135,11 +135,23 @@ function initializeBluetooth() {
     if (devices.length === 0) {
       bluetoothMsg("Sorry, no devices found", true);
       bluetoothMsg("failure", true);
+      setTimeout(function () {bluetoothMsg("clear messages");}, 3000);
     }
     else {
       g_devices = devices;
       device = g_devices.shift();
-      chrome.bluetoothSocket.create(onSocketCreate);
+      while (device && (device.uuids.indexOf(uuid) == -1 || !device.paired)) {
+        device = g_devices.shift();
+      }
+      
+      if (device) { 
+        chrome.bluetoothSocket.create(onSocketCreate);
+      }
+      else {
+        bluetoothMsg("Sorry, no compatible devices found", true);
+        bluetoothMsg("failure", true);
+        setTimeout(function () {bluetoothMsg("clear messages");}, 3000);
+      }
     }
   });
 
