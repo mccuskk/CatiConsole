@@ -7,6 +7,7 @@
 var webview;
 var callback;
 var email;
+var socketId = null;
 
 function logout(cb) {
   console.log("Logout callback");
@@ -43,8 +44,13 @@ chrome.app.runtime.onLaunched.addListener(function(launchData) {
   );
 });
 
-chrome.runtime.onSuspend.addListener(function(){
-  //document.cookie = "_cati_session="+cookie;
+chrome.runtime.onSuspend.addListener(function() {
+  // Close the socket if closing
+  if (socketId) {
+    chrome.bluetoothSocket.disconnect(socketId);
+  }
+  
+  // Tell the system we are closing the app
   var xmlhttp = new XMLHttpRequest();
   xmlhttp.open("POST", "http://cati.kwest.co/closing?email="+email);
   xmlhttp.send();

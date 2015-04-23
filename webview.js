@@ -4,6 +4,7 @@
 
 var webviewEl;
 var uuid = "46ab76a3-bccd-4f29-a528-f03ba64a0589";
+var g_devices;
 var device;
 var socketId = null;
 var connected = false;
@@ -41,14 +42,22 @@ var onConnectedCallback = function() {
       bluetoothMsg(device.name+" not connected");
     }
     else {
-      bluetoothMsg(chrome.runtime.lastError.message);
+      bluetoothMsg(chrome.runtime.lastError.message+"<hr>", true);
     }
-    bluetoothMsg("failure", true);
+    
+    // Check if we have any more devices and try them otherwise just report failure
+    device = g_devices.shift();
+    if (device) {
+      chrome.bluetoothSocket.create(onSocketCreate);
+    }
+    else {
+      bluetoothMsg("failure", true);
+    }
   } 
   else {
     setTimeout(function() {
       dialing = true;
-      bluetoothMsg("Dialing test number...");
+      bluetoothMsg("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dialing test number...");
       chrome.bluetoothSocket.send(socketId, str2ab("17070"), sending);
     }, 1000);
   }
@@ -74,11 +83,14 @@ function sending(bytes_sent) {
     if (dialing) {
         dialing = false;
         setTimeout(function() {
-          bluetoothMsg("Ending test dial...");
+          bluetoothMsg("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ending test dial...");
           chrome.bluetoothSocket.send(socketId, str2ab("hangup"), sending);
           setTimeout(function() {
             if (!socketError) {
               bluetoothMsg("success");
+              chrome.runtime.getBackgroundPage(function(bg) {
+                bg.socketId = socketId;
+              });
             }
           }, 1000);
         }, 4500);
@@ -119,11 +131,14 @@ function initializeBluetooth() {
   }
   
   chrome.bluetooth.getDevices(function(devices) {
+
     if (devices.length === 0) {
       bluetoothMsg("Sorry, no devices found", true);
+      bluetoothMsg("failure", true);
     }
-    for (var i = 0; i < devices.length; i++) {
-      device = devices[i];
+    else {
+      g_devices = devices;
+      device = g_devices.shift();
       chrome.bluetoothSocket.create(onSocketCreate);
     }
   });
