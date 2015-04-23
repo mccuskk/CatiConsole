@@ -3,7 +3,7 @@
   "name": "Kwest Interviewer Console",
   "short_name": "Kwest Interviewer Console",
   "description": "",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "minimum_chrome_version": "41",
   "bluetooth": {
     "socket": true,
