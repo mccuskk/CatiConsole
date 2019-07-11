@@ -22,15 +22,9 @@ chrome.app.runtime.onLaunched.addListener(function(launchData) {
     'index.html',
     {
       id: 'mainWindowCATI',
-      innerBounds: {
-        left: 0,
-        top: 0
-      },
-      state: "maximized",
-      resizable: true
+      state: "fullscreen"
     },
     function(win) {
-      win.maximize();
       win.contentWindow.addEventListener("load", function(){
         webview = win.contentWindow.document.getElementById("catiWebView");
         webview.src = targetOrigin;

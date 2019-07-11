@@ -1,15 +1,18 @@
 {
+  "update_url": "https://clients2.google.com/service/update2/crx",
+
   "manifest_version": 2,
   "name": "Kwest Interviewer Console",
   "short_name": "Kwest Interviewer Console",
   "description": "",
-  "version": "0.0.8",
+  "version": "0.4.0",
   "minimum_chrome_version": "41",
+  "kiosk_enabled":  true,
   "bluetooth": {
     "socket": true,
     "uuids": [ "46ab76a3-bccd-4f29-a528-f03ba64a0589" ]
   },
-  "permissions": ["webview"],
+  "permissions": ["webview", "fullscreen"],
 
   "icons": {
     "16": "assets/icon_16.png",
